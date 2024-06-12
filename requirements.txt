@@ -1,0 +1,6 @@
+telegram
+pandas
+whois
+lxml
+beautifulsoup4
+requests
