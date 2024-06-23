@@ -10,6 +10,8 @@ from email.policy import default
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 import os
+import shutil
+import glob
 
 """
 
@@ -83,38 +85,25 @@ save_last_email_html(username, password, imap_server)
 
 
 
-
-
-
-def download_google_spreadsheet(spreadsheet_url, output_file):
-    # Extract the spreadsheet ID from the URL
-    spreadsheet_id = spreadsheet_url.split('/d/')[1].split('/')[0]
+def download_google_folder(folder_id, output_folder):
+    shutil.rmtree(output_folder, ignore_errors=True)
+    os.makedirs(output_folder, exist_ok=True)
+    # Authenticate and create a GoogleDrive instance
+    drive = authenticate_and_create_drive()
     
-    # Construct the download URL for Excel format
-    download_url = f'https://docs.google.com/spreadsheets/d/1VbaQ6RnTtXugLVhdJv8KwtQISi2Wb7BdPGTdGHBUW8M/export?format=xlsx'
-    				
+    # List all files in the specified folder
+    file_list = drive.ListFile({'q': f"'{folder_id}' in parents and trashed=false"}).GetList()
     
-    # Send a GET request to download the file
-    response = requests.get(download_url)
-    
-    # Check if the request was successful
-    if response.status_code == 200:
-        # Write the content to a file
-        with open(output_file, 'wb') as file:
-            file.write(response.content)
-        print(f"Spreadsheet successfully downloaded to {output_file}")
-    else:
-        print(f"Failed to download spreadsheet. Status code: {response.status_code}")
+    # Download each file in the folder
+    for file in file_list:
+        file.GetContentFile(os.path.join(output_folder, file['title']))
+        print(f"Downloaded file '{file['title']}'")
 
-# Example usage
-spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1VbaQ6RnTtXugLVhdJv8KwtQISi2Wb7BdPGTdGHBUW8M/edit'
-output_file = 'spreadsheet.xlsx'
-download_google_spreadsheet(spreadsheet_url, output_file)
-
-
-
-
-
+def get_latest_file(folder):
+    list_of_files = glob.glob(folder + '/*') # * means all if need specific format then *.csv
+    dates = [f.split('/')[-1].split('.')[0] for f in list_of_files]
+    latest_file = max(dates)
+    return f'{latest_file}.report.xlsx'
 
 
 
@@ -221,19 +210,6 @@ print(f"Excel file '{output_file}' has been created successfully.")
 
 
 
-#######################################################
-
-dfMain = pd.read_excel('spreadsheet.xlsx')
-#print(dfMain.head(20))
-dfMain=pd.concat([df,dfMain], join='outer', ignore_index=True)
-#print(dfMain.head(20))
-dfMain.to_excel('UPDATED spreadsheet.xlsx', index=False)
-print(f"Results addded to the main spreadsheet")
-
-#######################################################
-
-
-
 # Function to authenticate and create a GoogleDrive instance
 def authenticate_and_create_drive():
     gauth = GoogleAuth()
@@ -258,6 +234,14 @@ def authenticate_and_create_drive():
 
     return GoogleDrive(gauth)
 
+
+#######################################################
+
+
+
+#######################################################
+
+
 # Function to upload a file to Google Drive
 def upload_file_to_drive(drive, file_path, folder_id=None):
     file_name = os.path.basename(file_path)
@@ -268,10 +252,18 @@ def upload_file_to_drive(drive, file_path, folder_id=None):
 
 if __name__ == "__main__":
     drive = authenticate_and_create_drive()
-    file_path = "UPDATED spreadsheet.xlsx"  # Replace with your Excel file path
-    folder_id = None  # Replace with your folder ID if you want to upload to a specific folder
+    folder_id = '1f1IJNpubNhh5xImT1AbDPTNCjN0gixv2'
+    outputFolder = 'output_folder'
+    download_google_folder(folder_id, outputFolder)
+    dfMain = pd.read_excel(get_latest_file(outputFolder))
+    #print(dfMain.head(20))
+    dfMain=pd.concat([df,dfMain], join='outer', ignore_index=True)
+    #print(dfMain.head(20))
+    filename = f'{today}.report.xlsx'
+    dfMain.to_excel(filename, index=False)
+    print(f"Results addded to the main spreadsheet")
+    upload_file_to_drive(drive, filename, folder_id)
 
-    upload_file_to_drive(drive, file_path, folder_id)
 
 
 
