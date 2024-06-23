@@ -4,3 +4,4 @@ whois
 lxml
 beautifulsoup4
 requests
+tabulate
