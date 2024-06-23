@@ -137,13 +137,13 @@ soup = BeautifulSoup(content, 'html.parser')
 # Extract the text from the HTML content
 email_text = soup.get_text()
 
-print(email_text)
+# print(email_text)
 
 # Define regex patterns to extract relevant information
-pattern_founded = re.compile(r'Founded in: \s* (\d{4})', re.MULTILINE)
-pattern_series = re.compile(r'Series: (.+?)\n', re.MULTILINE)
-pattern_funding = re.compile(r'New Money in press: \€([\d.,]+[km])', re.MULTILINE)
-pattern_investors = re.compile(r'Investors: (.+?)\n', re.MULTILINE)
+pattern_founded = re.compile(r'Founded in:\s* (\d{4})', re.MULTILINE)
+pattern_series = re.compile(r'Series:\s* (.+?)\n', re.MULTILINE)
+pattern_funding = re.compile(r'New\s* Money in\s* press:\s* \€([\d.,]+[km])', re.MULTILINE)
+pattern_investors = re.compile(r'Investors:\s* (.+?)\n', re.MULTILINE)
 
 
 def normalize_funding(amount):
@@ -157,12 +157,13 @@ def normalize_funding(amount):
 
 # Extracting data into lists
 soup = BeautifulSoup(content, 'lxml')
-res = soup.select('html body div div.gmail_quote div.msg-6817032014645321346 div div center table#m_757163469011670899x_bodyTable tbody tr td#m_757163469011670899x_bodyCell table tbody tr td#m_757163469011670899x_templateBody table tbody tr td table tbody tr td table tbody tr td table tbody tr td span font b')
+res = soup.select('tbody tr td.mcnImageCardRightContentInner table.mcnImageCardRightTextContentContainer tbody tr td.mcnTextContent span font strong')
+
 
 companies = [elt.text for elt in res if elt.text != '' and elt.text != '→\n']
 
 
-res2 = soup.select('html body div div.gmail_quote div.msg-6817032014645321346 div div center table#m_757163469011670899x_bodyTable tbody tr td#m_757163469011670899x_bodyCell table tbody tr td#m_757163469011670899x_templateBody table tbody tr td table tbody tr td table tbody tr td table tbody tr td span' )
+res2 = soup.select('tbody.mcnImageCardBlockOuter tr td.mcnImageCardBlockInner table.mcnImageCardRightContentOuter tbody tr td.mcnImageCardRightContentInner table.mcnImageCardRightTextContentContainer tbody tr td.mcnTextContent span' )
 descriptions_V1 = [elt.text for elt in res2 if elt.text != '']
 descriptions_V2 = descriptions_V1[1::5]
 descriptions= [elt for elt in descriptions_V2 if elt != '\xa0']
@@ -187,7 +188,7 @@ funding_amounts.extend([''] * (max_len - len(funding_amounts)))
 investors.extend([''] * (max_len - len(investors)))
 descriptions.extend([''] * (max_len - len(descriptions)))
 
-print(companies, founded_years, series, funding_amounts, investors)
+#print(companies, founded_years, series, funding_amounts, investors)
 
 # Create DataFrame
 df = pd.DataFrame({
@@ -205,7 +206,7 @@ today = date.today()
 df['Announced Date'] = today
 
 
-#print(df)
+print(df)
 
 
 df = df.replace('', np.nan, regex=True) 
@@ -236,7 +237,6 @@ print(f"Results addded to the main spreadsheet")
 # Function to authenticate and create a GoogleDrive instance
 def authenticate_and_create_drive():
     gauth = GoogleAuth()
-
     # Try to load saved client credentials
     try:
         gauth.LoadCredentialsFile("credentials.json")
