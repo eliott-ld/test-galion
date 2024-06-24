@@ -103,6 +103,7 @@ def get_latest_file(folder):
     list_of_files = glob.glob(folder + '/*') # * means all if need specific format then *.csv
     dates = [f.split('/')[-1].split('.')[0] for f in list_of_files]
     latest_file = max(dates)
+    print(f'{latest_file}.report.xlsx')
     return f'{latest_file}.report.xlsx'
 
 
@@ -255,7 +256,8 @@ if __name__ == "__main__":
     folder_id = '1f1IJNpubNhh5xImT1AbDPTNCjN0gixv2'
     outputFolder = 'output_folder'
     download_google_folder(folder_id, outputFolder)
-    dfMain = pd.read_excel(get_latest_file(outputFolder))
+    spreadsheet = get_latest_file(outputFolder)
+    dfMain = pd.read_excel(outputFolder + '/' + spreadsheet)
     #print(dfMain.head(20))
     dfMain=pd.concat([df,dfMain], join='outer', ignore_index=True)
     #print(dfMain.head(20))
